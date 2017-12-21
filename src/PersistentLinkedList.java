@@ -3,9 +3,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
-/**
- * Created by Svetlana on 21.12.2017.
- */
 public class PersistentLinkedList extends LinkedList
 {
 

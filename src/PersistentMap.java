@@ -5,9 +5,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-/**
- * Created by Svetlana on 21.12.2017.
- */
+
 public class PersistentMap implements Map
 {
 
