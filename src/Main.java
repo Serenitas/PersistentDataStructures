@@ -55,7 +55,27 @@ public class Main {
 
     }
 
+    private static void change(Integer i) {
+        i = new Integer(6);
+    }
+
     public static void main(String[] args) {
-        System.out.print("Persistent array test " + (persistentArrayTest() ? "passed" : "failed"));
+        //System.out.print("Persistent array test " + (persistentArrayTest() ? "passed" : "failed"));
+
+        /*PersistentListNode<String> n1 = new PersistentListNode<>("First", 0, 0, 0);
+        PersistentListNode<String> n2 = new PersistentListNode<>("Second", 0, 0, 0);
+        PersistentListNode<String> n3 = new PersistentListNode<>("Third", 0, 0, 0);
+
+        n1._next = n2;
+        n2._prev = n1;
+        n2._next = n3;
+        n3._prev = n2;
+
+        System.out.println(n1.getObject() + " " + n1._next.getObject() + " " + n1._next._next.getObject());
+        n1._next = n2._next;
+        n2._next._prev = n1;
+        n2._next._next = null;
+        n1._next._next = n2;
+        System.out.println(n1.getObject() + " " + n1._next.getObject() + " " + n1._next._next.getObject());*/
     }
 }
