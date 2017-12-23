@@ -61,13 +61,14 @@ public class PersistentArray <E> {
         return get(index, currentVersion);
     }
 
-    public void set(int index, E obj) {
+    public int set(int index, E obj) {
         int curLen = versionsLengths.get(currentVersion);
         if (curLen <= index)
             throw new ArrayIndexOutOfBoundsException(Exceptions.INDEX_OUT_OF_BOUNDS);
         currentVersion++;
         versionedData.get(index).put(currentVersion, obj);
         versionsLengths.add(curLen);
+        return currentVersion;
     }
 
     public int getLength(int version) {
@@ -80,7 +81,7 @@ public class PersistentArray <E> {
         return getLength(currentVersion);
     }
 
-    public void add(E obj) {
+    public int add(E obj) {
         int curLen = getLength();
         if (curLen >= versionedData.size()) {
             versionedData.add(new TreeMap<>());
@@ -88,14 +89,16 @@ public class PersistentArray <E> {
         currentVersion++;
         versionedData.get(curLen).put(currentVersion, obj);
         versionsLengths.add(curLen + 1);
+        return currentVersion;
     }
 
-    public void remove() {
+    public int remove() {
         int curLen = getLength();
         if (curLen == 0) {
             throw new ArrayIndexOutOfBoundsException(Exceptions.NOTHING_TO_REMOVE);
         }
         currentVersion++;
         versionsLengths.add(curLen - 1);
+        return currentVersion;
     }
 }
