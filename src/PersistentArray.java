@@ -7,7 +7,7 @@ public class PersistentArray <E> {
 
     private static final int INIT_CAPACITY = 10;
     private int currentVersion = 0;
-    private TreeMap <Integer, Integer> versionsLengths;
+    private ArrayList <Integer> versionsLengths;
     private ArrayList <TreeMap <Integer, E>> versionedData;
 
     /**
@@ -19,8 +19,8 @@ public class PersistentArray <E> {
             versionedData.add(new TreeMap<>());
             versionedData.get(i).put(currentVersion, null);
         }
-        versionsLengths = new TreeMap<>();
-        versionsLengths.put(currentVersion, INIT_CAPACITY);
+        versionsLengths = new ArrayList<>();
+        versionsLengths.add(INIT_CAPACITY);
     }
 
     /**
@@ -32,8 +32,8 @@ public class PersistentArray <E> {
             versionedData.add(new TreeMap<>());
             versionedData.get(i).put(currentVersion, null);
         }
-        versionsLengths = new TreeMap<>();
-        versionsLengths.put(currentVersion, capacity);
+        versionsLengths = new ArrayList<>();
+        versionsLengths.add(capacity);
     }
 
     /**
@@ -46,7 +46,7 @@ public class PersistentArray <E> {
     public E get(int index, int version) {
         if (version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
-        if (versionsLengths.floorEntry(version).getValue() <= index)
+        if (versionsLengths.get(version) <= index)
             throw new ArrayIndexOutOfBoundsException(Exceptions.INDEX_OUT_OF_BOUNDS);
         return versionedData.get(index).floorEntry(version).getValue();
     }
@@ -62,18 +62,19 @@ public class PersistentArray <E> {
     }
 
     public int set(int index, E obj) {
-        int curLen = versionsLengths.floorEntry(currentVersion).getValue();
+        int curLen = versionsLengths.get(currentVersion);
         if (curLen <= index)
             throw new ArrayIndexOutOfBoundsException(Exceptions.INDEX_OUT_OF_BOUNDS);
         currentVersion++;
         versionedData.get(index).put(currentVersion, obj);
+        versionsLengths.add(curLen);
         return currentVersion;
     }
 
     public int getLength(int version) {
         if (version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
-        return versionsLengths.floorEntry(version).getValue();
+        return versionsLengths.get(version);
     }
 
     public int getLength() {
@@ -87,7 +88,7 @@ public class PersistentArray <E> {
         }
         currentVersion++;
         versionedData.get(curLen).put(currentVersion, obj);
-        versionsLengths.put(currentVersion, curLen + 1);
+        versionsLengths.add(curLen + 1);
         return currentVersion;
     }
 
@@ -97,7 +98,7 @@ public class PersistentArray <E> {
             throw new ArrayIndexOutOfBoundsException(Exceptions.NOTHING_TO_REMOVE);
         }
         currentVersion++;
-        versionsLengths.put(currentVersion, curLen - 1);
+        versionsLengths.add(curLen - 1);
         return currentVersion;
     }
 }
