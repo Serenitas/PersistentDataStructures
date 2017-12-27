@@ -55,12 +55,19 @@ public class PersistentArray <E> {
      * Returns the element at the specified position in the current version of the array.
      *
      * @param index index of the element to return.
-     * @return the element at the specified position in the specified version of the array.
+     * @return the element at the specified position in the current version of the array.
      */
     public E get(int index) {
         return get(index, currentVersion);
     }
 
+    /**
+     * Replaces the element at the specified position in the last version of this array with the specified element.
+     *
+     * @param index index of the element to replace
+     * @param obj element to be stored at the specified position
+     * @return number of current version of the array
+     */
     public int set(int index, E obj) {
         int curLen = versionsLengths.floorEntry(currentVersion).getValue();
         if (curLen <= index)
@@ -70,16 +77,33 @@ public class PersistentArray <E> {
         return currentVersion;
     }
 
+    /**
+     * Returns the length of the specified version of this array.
+     *
+     * @param version version of array
+     * @return length of the specified version of this array
+     */
     public int getLength(int version) {
         if (version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
         return versionsLengths.floorEntry(version).getValue();
     }
 
+    /**
+     * Returns the length of the current version of this array.
+     *
+     * @return length of the current version of this array
+     */
     public int getLength() {
         return getLength(currentVersion);
     }
 
+    /**
+     * Adds the element as last in the last version of this array
+     *
+     * @param obj object to be added
+     * @return current version of this array
+     */
     public int add(E obj) {
         int curLen = getLength();
         if (curLen >= versionedData.size()) {
@@ -91,6 +115,11 @@ public class PersistentArray <E> {
         return currentVersion;
     }
 
+    /**
+     * Removes last element in the last version of this array.
+     *
+     * @return current version of this array
+     */
     public int remove() {
         int curLen = getLength();
         if (curLen == 0) {
