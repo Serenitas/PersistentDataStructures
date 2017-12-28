@@ -48,20 +48,21 @@ public class PersistentLinkedList<E> implements List {
         return isEmpty(currentVersion);
     }
 
-    //TODO check
     public boolean contains(Object o, int version) {
-        if (version > currentVersion)
+        if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
         if (isEmpty(version))
             return false;
-        PersistentListNode<E> current = versionedHeads.floorEntry(currentVersion).getValue();
-        int size = versionsLengths.floorEntry(currentVersion).getValue();
-        for (int i = 0; i < size; i++) {
-            if (current.getObject() == null)
+
+        PersistentListNode<E> current = versionedHeads.floorEntry(version).getValue();
+        for (int i = 0; i < size(version); i++) {
+            if (current.getObject(version) == null) {
                 if (o == null) return true;
-                else if (current.getObject().equals(o))
+            } else {
+                if (current.getObject(version).equals(o))
                     return true;
-            current = current.getNext();
+            }
+            current = current.getNext(version);
         }
         return false;
     }
@@ -71,7 +72,6 @@ public class PersistentLinkedList<E> implements List {
         return contains(o, currentVersion);
     }
 
-    //TODO check
     public Iterator iterator(int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
@@ -101,8 +101,8 @@ public class PersistentLinkedList<E> implements List {
         Object[] array = new Object[size(version)];
         PersistentListNode<E> current = versionedHeads.floorEntry(version).getValue();
         for (int i = 0; i < array.length; i++) {
-            array[i] = current.getObject();
-            current = current.getNext();
+            array[i] = current.getObject(version);
+            current = current.getNext(version);
         }
         return array;
     }
@@ -121,9 +121,12 @@ public class PersistentLinkedList<E> implements List {
             versionedTails.put(version, current);
             versionsLengths.put(version, 1);
         } else {
-            PersistentListNode<E> current = new PersistentListNode<>((E) o, version, null, versionedTails.floorEntry(version).getValue());
+            PersistentListNode<E> prev = versionedTails.floorEntry(version).getValue();
+            PersistentListNode<E> current = new PersistentListNode<>((E) o, version, prev, null);
+            prev.setNext(version, current);
+
             versionedTails.put(version, current);
-            versionsLengths.put(version, versionsLengths.floorEntry(version).getValue() + 1);
+            versionsLengths.put(version, size(version) + 1);
         }
         return true;
     }
@@ -141,21 +144,7 @@ public class PersistentLinkedList<E> implements List {
         if (isEmpty(version))
             return false;
         PersistentListNode<E> current = versionedHeads.floorEntry(currentVersion).getValue();
-        int size = versionsLengths.floorEntry(currentVersion).getValue();
-        for (int i = 0; i < size; i++) {
-            if (current.getObject().equals(o)) {
-                if (i == 0) {
-                    //current.getNext().setPrev(null);
-                    versionedHeads.put(currentVersion, current.getNext());
-                } else if (i == size - 1) {
 
-                } else {
-
-                }
-                return true;
-            }
-            current = current.getNext();
-        }
         return false;
     }
 
@@ -166,11 +155,10 @@ public class PersistentLinkedList<E> implements List {
         return remove(o, currentVersion);
     }
 
-    // TODO check
+    // TODO O(N*M) -> O(N + M)
     @Override
     public boolean addAll(int index, Collection c) {
-        int size = size();
-        if (index < 0 || index >= size)
+        if (index < 0 || index > size())
             throw new IndexOutOfBoundsException(Exceptions.LIST_INDEX_OUT_OF_BOUNDS);
         if (c.isEmpty())
             return false;
@@ -182,42 +170,42 @@ public class PersistentLinkedList<E> implements List {
         return true;
     }
 
-    //TODO check
     @Override
     public boolean addAll(Collection c) {
-        return addAll(0, c);
+        return addAll(size(), c);
     }
 
-    // TODO check
     @Override
     public boolean retainAll(Collection c) {
         if (c.isEmpty() || isEmpty())
             return false;
-        int size = size();
-        PersistentListNode<E> current = versionedHeads.get(currentVersion);
+        PersistentListNode<E> current = versionedHeads.floorEntry(currentVersion).getValue();
         boolean isChanged = false;
-        currentVersion++;
-        for (int i = 0; i < size; i++) {
-            if (!c.contains(current.getObject())) {
-                isChanged = isChanged || remove(current, currentVersion);
+        for (int i = 0; i < size(); i++) {
+            if (!c.contains(current.getObject(currentVersion + 1))) {
+                isChanged = isChanged || remove(current, currentVersion + 1);
+                current = current.getNext(currentVersion + 1);
             }
         }
+        if (isChanged) { currentVersion++; }
         return isChanged;
     }
 
-    // TODO check
+    // TODO O(N*M) -> O(N + M)
     @Override
     public boolean removeAll(Collection c) {
-        currentVersion++;
         boolean isChanged = false;
         for (Object o : c) {
-            isChanged = isChanged || remove(o, currentVersion);
+            while (remove(o, currentVersion + 1)) {
+                isChanged = true;
+            }
         }
+        if (isChanged) { currentVersion++; }
         return isChanged;
     }
 
     public boolean containsAll(Collection c, int version) {
-        if (version > currentVersion)
+        if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
         for (Object o : c) {
             if (!contains(o, version))
@@ -237,14 +225,13 @@ public class PersistentLinkedList<E> implements List {
         return new Object[0];
     }
 
-    // TODO check
     @Override
     public void replaceAll(UnaryOperator operator) {
-        int size = size();
         PersistentListNode currElement = versionedHeads.floorEntry(currentVersion).getValue();
         currentVersion++;
-        for (int i = 0; i < size; i++) {
-            set(i, operator.apply(currElement.getObject()), currentVersion); //
+        for (int i = 0; i < size(); i++) {
+            set(i, operator.apply(currElement.getObject(currentVersion)), currentVersion);
+            currElement = currElement.getNext(currentVersion);
         }
     }
 
@@ -254,7 +241,6 @@ public class PersistentLinkedList<E> implements List {
 
     }
 
-    // TODO check
     @Override
     public void clear() {
         currentVersion++;
@@ -266,15 +252,14 @@ public class PersistentLinkedList<E> implements List {
     public Object get(int index, int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
-        int size = size();
-        if (index < 0 || index >= size)
+        if (index < 0 || index >= size())
             throw new IndexOutOfBoundsException(Exceptions.LIST_INDEX_OUT_OF_BOUNDS);
 
         PersistentListNode<E> current = versionedHeads.floorEntry(version).getValue();
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < size(); i++) {
             if (i == index)
-                return current.getObject();
-            current = current.getNext();
+                return current.getObject(version);
+            current = current.getNext(version);
         }
         return null;
     }
@@ -284,6 +269,7 @@ public class PersistentLinkedList<E> implements List {
         return get(index, currentVersion);
     }
 
+    //TODO
     private Object set(int index, Object element, int version) {
         int size = size();
         if (index < 0 || index >= size)
@@ -292,30 +278,41 @@ public class PersistentLinkedList<E> implements List {
         return null;
     }
 
-    // TODO check
     @Override
     public Object set(int index, Object element) {
-        return set(index, element, currentVersion++);
+        currentVersion++;
+        return set(index, element, currentVersion);
     }
 
-    // TODO
     private void add(int index, Object element, int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
-        int size = size(version);
-        if (index < 0 || index >= size)
+        if (index < 0 || index > size(version))
             throw new IndexOutOfBoundsException(Exceptions.LIST_INDEX_OUT_OF_BOUNDS);
 
+        if (index == size(version)) {
+            add(element, version);
+            return;
+        }
 
+        PersistentListNode<E> current = versionedHeads.floorEntry(version).getValue();
+        for (int i = 0; i < index; i++) {
+            current = current.getNext(version);
+        } // after that current is element needed to shift
 
-
+        PersistentListNode<E> prev = current.getPrev(version);
+        PersistentListNode<E> newEl = new PersistentListNode<>((E)element, version, prev, current);
+        if (null != prev) {
+            prev.setNext(version, newEl);
+        } else {
+            versionedHeads.put(version, newEl);
+        }
+        current.setPrev(version, newEl);
     }
 
-    // TODO check
     @Override
     public void add(int index, Object element) {
-        int size = size();
-        if (index < 0 || index >= size)
+        if (index < 0 || index > size())
             throw new IndexOutOfBoundsException(Exceptions.LIST_INDEX_OUT_OF_BOUNDS);
         currentVersion++;
         add(index, element, currentVersion);
@@ -337,15 +334,19 @@ public class PersistentLinkedList<E> implements List {
     public int indexOf(Object o, int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
+
         int result = -1;
-        int size = versionsLengths.floorEntry(version).getValue();
+        if (isEmpty(version)) {
+            return result;
+        }
+
         PersistentListNode<E> current = versionedHeads.floorEntry(version).getValue();
-        for (int ind = 0; ind < size; ind++) {
-            if (current.getObject().equals(o)) {
+        for (int ind = 0; ind < size(version); ind++) {
+            if (current.getObject(version).equals(o)) {
                 result = ind;
                 break;
             }
-            current = current.getNext();
+            current = current.getNext(version);
         }
         return result;
     }
@@ -359,13 +360,15 @@ public class PersistentLinkedList<E> implements List {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
         int result = -1;
-        int size = versionsLengths.floorEntry(version).getValue();
+        if (isEmpty(version)) {
+            return result;
+        }
         PersistentListNode<E> current = versionedHeads.floorEntry(version).getValue();
-        for (int ind = 0; ind < size; ind++) {
-            if (current.getObject().equals(o)) {
+        for (int ind = 0; ind < size(version); ind++) {
+            if (current.getObject(version).equals(o)) {
                 result = ind;
             }
-            current = current.getNext();
+            current = current.getNext(version);
         }
         return result;
     }
@@ -375,7 +378,6 @@ public class PersistentLinkedList<E> implements List {
         return lastIndexOf(o, currentVersion);
     }
 
-    //TODO check
     public ListIterator versionedListIterator(int version, int index) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
@@ -388,40 +390,38 @@ public class PersistentLinkedList<E> implements List {
             PersistentListNode currElement = versionedHeads.get(_version);
 
             {
-                for (int i = 0; i < size; i++) {
-                    if (i == index)
-                        break;
-                    currElement = currElement.getNext();
+                for (int i = 0; i < index; i++) {
+                    currElement = currElement.getNext(_version);
                 }
             }
 
 
             @Override
             public boolean hasNext() {
-                return currElement.getNext() != null;
+                return currElement.getNext(_version) != null;
             }
 
             @Override
             public Object next() {
                 if (hasNext()) {
-                    currElement = currElement.getNext();
+                    currElement = currElement.getNext(_version);
                     currIndex++;
-                    return currElement.getObject();
+                    return currElement.getObject(_version);
                 } else
                     throw new NoSuchElementException(Exceptions.NO_SUCH_ELEMENT);
             }
 
             @Override
             public boolean hasPrevious() {
-                return currElement.getPrev() != null;
+                return currElement.getPrev(_version) != null;
             }
 
             @Override
             public Object previous() {
                 if (hasPrevious()) {
-                    currElement = currElement.getPrev();
+                    currElement = currElement.getPrev(_version);
                     currIndex--;
-                    return currElement.getObject();
+                    return currElement.getObject(_version);
                 } else
                     throw new NoSuchElementException(Exceptions.NO_SUCH_ELEMENT);
             }
@@ -453,23 +453,21 @@ public class PersistentLinkedList<E> implements List {
         };
     }
 
-    //TODO check
     public ListIterator versionedListIterator(int version) {
         return versionedListIterator(version, 0);
     }
 
-    //TODO check
     @Override
     public ListIterator listIterator() {
         return versionedListIterator(currentVersion, 0);
     }
 
-    //TODO check
     @Override
     public ListIterator listIterator(int index) {
         return versionedListIterator(currentVersion, index);
     }
 
+    // TODO what form of list must be returned?
     public List subList(int fromIndex, int toIndex, int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
@@ -481,8 +479,8 @@ public class PersistentLinkedList<E> implements List {
         List<E> result = new ArrayList<E>();
         PersistentListNode<E> current = versionedHeads.floorEntry(version).getValue();
         for (int i = 0; i < size; i++) {
-            result.add(current.getObject());
-            current = current.getNext();
+            result.add(current.getObject(version));
+            current = current.getNext(version);
         }
         return result;
     }

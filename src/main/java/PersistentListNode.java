@@ -1,37 +1,36 @@
+import java.util.TreeMap;
+
 public class PersistentListNode<E> {
-    private E object;
-    private int version;
 
-    private PersistentListNode<E> next = null, prev = null;
+    private TreeMap<Integer, E> versionedData;
+    private TreeMap<Integer, PersistentListNode<E>> versionedPrev;
+    private TreeMap<Integer, PersistentListNode<E>> versionedNext;
 
-    public PersistentListNode(E object, int version, PersistentListNode<E> next, PersistentListNode<E> prev) {
-        this.object = object;
-        this.version = version;
-        this.next = next;
-        this.prev = prev;
+    public PersistentListNode(E object, int version, PersistentListNode<E> prev, PersistentListNode<E> next) {
+        versionedData = new TreeMap<>();
+        versionedPrev = new TreeMap<>();
+        versionedNext = new TreeMap<>();
+
+        versionedData.put(version, object);
+        versionedPrev.put(version, prev);
+        versionedNext.put(version, next);
     }
 
-    public PersistentListNode<E> getNext() {
-        return next;
+    public PersistentListNode<E> getNext(int version) {
+        return versionedNext.floorEntry(version).getValue();
     }
 
-    public void setNext(PersistentListNode<E> next) {
-        this.next = next;
+    public void setNext(int version, PersistentListNode<E> next) {
+        versionedNext.put(version, next);
     }
 
-    public PersistentListNode<E> getPrev() {
-        return prev;
+    public PersistentListNode<E> getPrev(int version) {
+        return versionedPrev.floorEntry(version).getValue();
     }
 
-    public void setPrev(PersistentListNode<E> prev) {
-        this.prev = prev;
+    public void setPrev(int version, PersistentListNode<E> prev) {
+        versionedPrev.put(version, prev);
     }
 
-    public E getObject() {
-        return object;
-    }
-
-    public int getVersion() {
-        return version;
-    }
+    public E getObject(int version) { return versionedData.floorEntry(version).getValue(); }
 }

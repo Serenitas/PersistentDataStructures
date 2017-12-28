@@ -47,7 +47,7 @@ public class PersistentArrayTest {
         int obj = 6;
         array = new PersistentArray<>();
         array.add(obj);
-        assertEquals((long) array.get(0), (long) obj);
+        assertEquals((int) array.get(PersistentArray.INIT_CAPACITY), (int) obj);
     }
 
     @Test

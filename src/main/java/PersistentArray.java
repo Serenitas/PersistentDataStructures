@@ -5,7 +5,7 @@ import java.util.TreeMap;
 
 public class PersistentArray <E> {
 
-    private static final int INIT_CAPACITY = 10;
+    public static final int INIT_CAPACITY = 10;
     private int currentVersion = 0;
     private TreeMap <Integer, Integer> versionsLengths;
     private ArrayList <TreeMap <Integer, E>> versionedData;
