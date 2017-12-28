@@ -1,6 +1,7 @@
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 
 public class PersistentArrayTest {
@@ -26,17 +27,27 @@ public class PersistentArrayTest {
     @Test
     public void checkInitialCapacity() {
         array = new PersistentArray<>();
-        Assert.assertEquals(array.getLength(), initialCapacity);
+        assertEquals(array.getLength(), initialCapacity);
+    }
+
+    @Test
+    public void getVersioned() throws Exception {
+        array = new PersistentArray<>(5);
+        array.set(3, 40);
+        array.set(3, 42);
+        array.set(3, 36);
+        assertEquals(array.get(3, 0), null);
+        assertEquals((long) array.get(3, 1), (long) 40);
+        assertEquals((long) array.get(3, 2), (long) 42);
+        assertEquals((long) array.get(3, 3), (long) 36);
     }
 
     @Test
     public void get() throws Exception {
-
-    }
-
-    @Test
-    public void get1() throws Exception {
-
+        int obj = 6;
+        array = new PersistentArray<>();
+        array.add(obj);
+        assertEquals((long) array.get(0), (long) obj);
     }
 
     @Test

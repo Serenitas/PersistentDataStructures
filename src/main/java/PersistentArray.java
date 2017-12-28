@@ -47,7 +47,7 @@ public class PersistentArray <E> {
         if (version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
         if (versionsLengths.floorEntry(version).getValue() <= index)
-            throw new ArrayIndexOutOfBoundsException(Exceptions.INDEX_OUT_OF_BOUNDS);
+            throw new ArrayIndexOutOfBoundsException(Exceptions.ARRAY_INDEX_OUT_OF_BOUNDS);
         return versionedData.get(index).floorEntry(version).getValue();
     }
 
@@ -71,7 +71,7 @@ public class PersistentArray <E> {
     public int set(int index, E obj) {
         int curLen = versionsLengths.floorEntry(currentVersion).getValue();
         if (curLen <= index)
-            throw new ArrayIndexOutOfBoundsException(Exceptions.INDEX_OUT_OF_BOUNDS);
+            throw new ArrayIndexOutOfBoundsException(Exceptions.ARRAY_INDEX_OUT_OF_BOUNDS);
         currentVersion++;
         versionedData.get(index).put(currentVersion, obj);
         return currentVersion;
