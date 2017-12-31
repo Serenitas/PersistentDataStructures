@@ -1,5 +1,9 @@
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
+import java.util.NoSuchElementException;
 
 import static org.junit.Assert.assertEquals;
 
@@ -7,6 +11,9 @@ import static org.junit.Assert.assertEquals;
 public class PersistentArrayTest {
     private PersistentArray<Integer> array = null;
     private int initialCapacity = 10;
+
+    @Rule
+    public ExpectedException ex = ExpectedException.none();
 
     @Before
     public void setUp() throws Exception {
@@ -52,17 +59,31 @@ public class PersistentArrayTest {
 
     @Test
     public void set() throws Exception {
-
+        array = new PersistentArray<>();
+        assertEquals(array.set(0, 1), 1);
+        assertEquals(array.set(1, 2), 2);
+        ex.expect(ArrayIndexOutOfBoundsException.class);
+        ex.expectMessage(Exceptions.ARRAY_INDEX_OUT_OF_BOUNDS);
+        array.set(initialCapacity + 5, 1);
     }
 
     @Test
     public void getLength() throws Exception {
-
+        array = new PersistentArray<>();
+        assertEquals(array.getLength(), initialCapacity);
+        array.add(1);
+        assertEquals(array.getLength(), initialCapacity + 1);
     }
 
     @Test
-    public void getLength1() throws Exception {
-
+    public void getLengthVersioned() throws Exception {
+        array = new PersistentArray<>();
+        assertEquals(array.getLength(0), initialCapacity);
+        array.add(1);
+        assertEquals(array.getLength(1), initialCapacity + 1);
+        ex.expect(NoSuchElementException.class);
+        ex.expectMessage(Exceptions.NO_SUCH_VERSION);
+        array.getLength(10);
     }
 
     @Test

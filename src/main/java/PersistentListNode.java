@@ -33,4 +33,8 @@ public class PersistentListNode<E> {
     }
 
     public E getObject(int version) { return versionedData.floorEntry(version).getValue(); }
+
+    public void setObject(int version, E obj) {
+        versionedData.put(version, obj);
+    }
 }

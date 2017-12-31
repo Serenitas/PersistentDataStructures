@@ -24,7 +24,9 @@ public class PersistentArray <E> {
     }
 
     /**
-     * Constructs an empty array with the specifies initial capacity.
+     * Constructs an empty array with the specified initial capacity.
+     *
+     * @param capacity initial capacity
      */
     public PersistentArray(int capacity) {
         versionedData = new ArrayList<>();
