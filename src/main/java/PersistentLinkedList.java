@@ -1,6 +1,8 @@
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
+
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 
 public class PersistentLinkedList<E> implements List {
     private int currentVersion = 0;
@@ -8,6 +10,9 @@ public class PersistentLinkedList<E> implements List {
     private TreeMap<Integer, PersistentListNode<E>> versionedHeads;
     private TreeMap<Integer, PersistentListNode<E>> versionedTails;
 
+    /**
+     * Constructs an empty persistent list.
+     */
     public PersistentLinkedList() {
         versionedHeads = new TreeMap<>();
         versionedTails = new TreeMap<>();
@@ -15,6 +20,11 @@ public class PersistentLinkedList<E> implements List {
         versionsLengths.put(0, 0);
     }
 
+    /**
+     * Constructs a persistent list from specified collection.
+     *
+     * @param c specified collection
+     */
     public PersistentLinkedList(Collection<E> c) {
         versionedHeads = new TreeMap<>();
         versionedTails = new TreeMap<>();
@@ -26,28 +36,51 @@ public class PersistentLinkedList<E> implements List {
         }
     }
 
+    /**
+     * Returns the number of elements in the specified version of this list.
+     * @param version version of this list
+     * @return number of elements in the specified version of this list.
+     */
     public int size(int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
         return versionsLengths.floorEntry(version).getValue();
     }
 
+    /**
+     * Returns the number of elements in the current version of this list.
+     * @return number of elements in the current version of this list.
+     */
     @Override
     public int size() {
         return size(currentVersion);
     }
 
+    /**
+     * Returns true if the specified version of this list contains no elements.
+     * @param version version of this list
+     * @return true if the specified version of this list contains no elements, false otherwise
+     */
     public boolean isEmpty(int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
         return size(version) == 0;
     }
 
+    /**
+     * Returns true if the current version of this list contains no elements.
+     * @return true if the current version of this list contains no elements, false otherwise
+     */
     @Override
     public boolean isEmpty() {
         return isEmpty(currentVersion);
     }
 
+    /**
+     * Returns true if specified version of this list contains the specified element. More formally, returns true if and only if specified version of this list contains at least one element e such that (o==null ? e==null : o.equals(e)).
+     * @param o object for checking
+     * @return true if current version of this list contains the specified element, false otherwise
+     */
     public boolean contains(Object o, int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
@@ -67,11 +100,20 @@ public class PersistentLinkedList<E> implements List {
         return false;
     }
 
+    /**
+     * Returns true if current version of this list contains the specified element. More formally, returns true if and only if current version of this list contains at least one element e such that (o==null ? e==null : o.equals(e)).
+     * @param o object for checking
+     * @return true if current version of this list contains the specified element, false otherwise
+     */
     @Override
     public boolean contains(Object o) {
         return contains(o, currentVersion);
     }
 
+    /**
+     * Returns an iterator over the elements in the specified version of this list in proper sequence.
+     * @return an iterator over the elements in the specified version of this list in proper sequence.
+     */
     public Iterator iterator(int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
@@ -90,11 +132,21 @@ public class PersistentLinkedList<E> implements List {
         };
     }
 
+    /**
+     * Returns an iterator over the elements in the current version of this list in proper sequence.
+     * @return an iterator over the elements in the current version of this list in proper sequence.
+     */
     @Override
     public Iterator iterator() {
         return iterator(currentVersion);
     }
 
+    /**
+     * Returns an array containing all of the elements in the specified version of this list in proper sequence (from first to last element).
+     *The returned array will be "safe" in that no references to it are maintained by this list. The caller is thus free to modify the returned array.
+     *This method acts as bridge between array-based and collection-based APIs.
+     * @return an array containing all of the elements in the specified version of this list in proper sequence
+     */
     public Object[] toArray(int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
@@ -107,11 +159,22 @@ public class PersistentLinkedList<E> implements List {
         return array;
     }
 
+    /**
+     * Returns an array containing all of the elements in the current version of this list in proper sequence (from first to last element).
+     *The returned array will be "safe" in that no references to it are maintained by this list. The caller is thus free to modify the returned array.
+     *This method acts as bridge between array-based and collection-based APIs.
+     * @return an array containing all of the elements in the current version of this list in proper sequence
+     */
     @Override
     public Object[] toArray() {
         return toArray(currentVersion);
     }
 
+    /**
+     * Adds the object to specified version of this list (only for multiple update operations).
+     * @param o element for adding
+     * @return true if this collection changed as a result of the call
+     */
     private boolean add(Object o, int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
@@ -131,12 +194,24 @@ public class PersistentLinkedList<E> implements List {
         return true;
     }
 
+    /**
+     * Adds the object to this list.
+     * @param o element for adding
+     * @return true if this collection changed as a result of the call
+     */
     @Override
     public boolean add(Object o) {
         currentVersion++;
         return add(o, currentVersion);
     }
 
+    /**
+     * Removes the first occurrence of the specified element from the specified version of this list, if it is present (only for multiple update operations).
+     * If this list does not contain the element, it is unchanged.
+     * More formally, removes the element with the lowest index i such that (o==null ? get(i)==null : o.equals(get(i))) (if such an element exists).
+     * @param o specified element
+     * @return true if this list contained the specified element (or equivalently, if this list changed as a result of the call).
+     */
     private boolean remove(Object o, int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
@@ -153,7 +228,7 @@ public class PersistentLinkedList<E> implements List {
                     versionedHeads.put(version, nextEl);
                 }
                 if (nextEl != null) {
-                    nextEl.setNext(version, prevEl);
+                    nextEl.setPrev(version, prevEl);
                 } else {
                     versionedTails.put(version, prevEl);
                 }
@@ -165,12 +240,29 @@ public class PersistentLinkedList<E> implements List {
         return false;
     }
 
+    /**
+     * Removes the first occurrence of the specified element from this list, if it is present.
+     * If this list does not contain the element, it is unchanged.
+     * More formally, removes the element with the lowest index i such that (o==null ? get(i)==null : o.equals(get(i))) (if such an element exists).
+     * @param o specified element
+     * @return true if this list contained the specified element (or equivalently, if this list changed as a result of the call).
+     */
     @Override
     public boolean remove(Object o) {
         currentVersion++;
         return remove(o, currentVersion);
     }
 
+    /**
+     * Inserts all of the elements in the specified collection into this list at the specified position.
+     * Shifts the element currently at that position (if any) and any subsequent elements to the right (increases their indices).
+     * The new elements will appear in this list in the order that they are returned by the specified collection's iterator.
+     * The behavior of this operation is undefined if the specified collection is modified while the operation is in progress.
+     * (Note that this will occur if the specified collection is this list, and it's nonempty.)
+     * @param index index at which to insert the first element from the specified collection
+     * @param c collection containing elements to be added to this list
+     * @return true if this list changed as a result of the call
+     */
     // TODO O(N*M) -> O(N + M)
     @Override
     public boolean addAll(int index, Collection c) {
@@ -186,40 +278,69 @@ public class PersistentLinkedList<E> implements List {
         return true;
     }
 
+    /**
+     * Inserts all of the elements in the specified collection to the end of this list at the specified position.
+     * The new elements will appear in this list in the order that they are returned by the specified collection's iterator.
+     * The behavior of this operation is undefined if the specified collection is modified while the operation is in progress.
+     * (Note that this will occur if the specified collection is this list, and it's nonempty.)
+     * @param c collection containing elements to be added to this list
+     * @return true if this list changed as a result of the call
+     */
     @Override
     public boolean addAll(Collection c) {
         return addAll(size(), c);
     }
 
+    /**
+     * Retains only the elements in this list that are contained in the specified collection.
+     * In other words, removes from this list all of its elements that are not contained in the specified collection.
+     * @param c collection containing elements to be retained in this list
+     * @return true if this list changed as a result of the call
+     */
     @Override
     public boolean retainAll(Collection c) {
         if (c.isEmpty() || isEmpty())
             return false;
         PersistentListNode<E> current = versionedHeads.floorEntry(currentVersion).getValue();
         boolean isChanged = false;
+        currentVersion++;
         for (int i = 0; i < size(); i++) {
-            if (!c.contains(current.getObject(currentVersion + 1))) {
-                isChanged = isChanged || remove(current, currentVersion + 1);
-                current = current.getNext(currentVersion + 1);
+            if (!c.contains(current.getObject(currentVersion))) {
+                isChanged = isChanged || remove(current.getObject(currentVersion), currentVersion);
+                current = current.getNext(currentVersion);
             }
         }
-        if (isChanged) { currentVersion++; }
+        if (!isChanged) {
+            currentVersion--; }
         return isChanged;
     }
 
+    /**
+     * Removes from this list all of its elements that are contained in the specified collection (optional operation).
+     * @param c collection containing elements to be removed from this list
+     * @return true if this list changed as a result of the call
+     */
     // TODO O(N*M) -> O(N + M)
     @Override
     public boolean removeAll(Collection c) {
         boolean isChanged = false;
+        currentVersion++;
         for (Object o : c) {
-            while (remove(o, currentVersion + 1)) {
+            while (remove(o, currentVersion)) {
                 isChanged = true;
             }
         }
-        if (isChanged) { currentVersion++; }
+        if (!isChanged) {
+            currentVersion--; }
         return isChanged;
     }
 
+    /**
+     * Returns true if the specified version of this list contains all of the elements of the specified collection.
+     * @param c collection to be checked for containment in the specified version of this list
+     * @param version specified version of this list
+     * @return true if the specified version of this list contains all of the elements of the specified collection
+     */
     public boolean containsAll(Collection c, int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
@@ -230,6 +351,11 @@ public class PersistentLinkedList<E> implements List {
         return true;
     }
 
+    /**
+     * Returns true if this list contains all of the elements of the specified collection.
+     * @param c collection to be checked for containment in this list
+     * @return true if this list contains all of the elements of the specified collection
+     */
     @Override
     public boolean containsAll(Collection c) {
         return containsAll(c, currentVersion);
@@ -241,6 +367,11 @@ public class PersistentLinkedList<E> implements List {
         return new Object[0];
     }
 
+    /**
+     * Replaces each element of this list with the result of applying the operator to that element.
+     * Errors or runtime exceptions thrown by the operator are relayed to the caller.
+     * @param operator the operator to apply to each element
+     */
     @Override
     public void replaceAll(UnaryOperator operator) {
         PersistentListNode currElement = versionedHeads.floorEntry(currentVersion).getValue();
@@ -251,12 +382,16 @@ public class PersistentLinkedList<E> implements List {
         }
     }
 
-    // TODO
+    // TODO sort
     @Override
     public void sort(Comparator c) {
 
     }
 
+    /**
+     * Removes all of the elements from this list (optional operation).
+     * The list will be empty after this call returns.
+     */
     @Override
     public void clear() {
         currentVersion++;
@@ -265,6 +400,12 @@ public class PersistentLinkedList<E> implements List {
         versionedTails.put(currentVersion, null);
     }
 
+    /**
+     * Returns the element at the specified position in the specified version of this list.
+     * @param index index of the element to return
+     * @param version specified version of this list
+     * @return the element at the specified position in the specified version of this list
+     */
     public Object get(int index, int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
@@ -280,6 +421,11 @@ public class PersistentLinkedList<E> implements List {
         return null;
     }
 
+    /**
+     * Returns the element at the specified position in the current version of this list.
+     * @param index index of the element to return
+     * @return the element at the specified position in the current version of this list
+     */
     @Override
     public Object get(int index) {
         return get(index, currentVersion);
@@ -299,12 +445,25 @@ public class PersistentLinkedList<E> implements List {
         return prevObj;
     }
 
+    /**
+     * Replaces the element at the specified position in this list with the specified element (optional operation).
+     * @param index index of the element to replace
+     * @param element element to be stored at the specified position
+     * @return the element previously at the specified position
+     */
     @Override
     public Object set(int index, Object element) {
         currentVersion++;
         return set(index, element, currentVersion);
     }
 
+    /**
+     * Inserts the specified element at the specified position in the specified version of this list (only for multiple update operations).
+     * Shifts the element currently at that position (if any) and any subsequent elements to the right (adds one to their indices).
+     * @param index index at which the specified element is to be inserted
+     * @param version specified version of this list
+     * @param element element to be inserted
+     */
     private void add(int index, Object element, int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
@@ -332,6 +491,12 @@ public class PersistentLinkedList<E> implements List {
         versionsLengths.put(version, size(version) + 1);
     }
 
+    /**
+     * Inserts the specified element at the specified position in this list.
+     * Shifts the element currently at that position (if any) and any subsequent elements to the right (adds one to their indices).
+     * @param index index at which the specified element is to be inserted
+     * @param element element to be inserted
+     */
     @Override
     public void add(int index, Object element) {
         if (index < 0 || index > size())
@@ -340,6 +505,13 @@ public class PersistentLinkedList<E> implements List {
         add(index, element, currentVersion);
     }
 
+    /**
+     * Removes the element at the specified position in this list.
+     * Shifts any subsequent elements to the left (subtracts one from their indices).
+     * Returns the element that was removed from the list.
+     * @param index the index of the element to be removed
+     * @return the element previously at the specified position
+     */
     @Override
     public Object remove(int index) {
         if (index < 0 || index >= size())
@@ -359,7 +531,7 @@ public class PersistentLinkedList<E> implements List {
             versionedHeads.put(currentVersion, nextEl);
         }
         if (nextEl != null) {
-            nextEl.setNext(currentVersion, prevEl);
+            nextEl.setPrev(currentVersion, prevEl);
         } else {
             versionedTails.put(currentVersion, prevEl);
         }
@@ -368,6 +540,12 @@ public class PersistentLinkedList<E> implements List {
         return null;
     }
 
+    /**
+     * Returns the index of the first occurrence of the specified element in the specifies version of this list, or -1 if the specified version of this list does not contain the element.
+     * More formally, returns the lowest index i such that (o==null ? get(i)==null : o.equals(get(i))), or -1 if there is no such index.
+     * @param o element to search for
+     * @return the index of the first occurrence of the specified element in this list, or -1 if this list does not contain the element
+     */
     public int indexOf(Object o, int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
@@ -388,11 +566,22 @@ public class PersistentLinkedList<E> implements List {
         return result;
     }
 
+    /**
+     * Returns the index of the first occurrence of the specified element in the current version of this list, or -1 if the current version of this list does not contain the element.
+     * More formally, returns the lowest index i such that (o==null ? get(i)==null : o.equals(get(i))), or -1 if there is no such index.
+     * @param o element to search for
+     * @return the index of the first occurrence of the specified element in this list, or -1 if this list does not contain the element
+     */
     @Override
     public int indexOf(Object o) {
         return indexOf(o, currentVersion);
     }
 
+    /**
+     * Returns the index of the last occurrence of the specified element in the specified version of  this list, or -1 if the specified version of this list does not contain the element. More formally, returns the highest index i such that (o==null ? get(i)==null : o.equals(get(i))), or -1 if there is no such index.
+     * @param o element to search for
+     * @ the index of the last occurrence of the specified element in the specified version of this list, or -1 if the specified version of this list does not contain the element
+     */
     public int lastIndexOf(Object o, int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
@@ -410,11 +599,23 @@ public class PersistentLinkedList<E> implements List {
         return result;
     }
 
+    /**
+     * Returns the index of the last occurrence of the specified element in the current version of this list, or -1 if the current version of this list does not contain the element. More formally, returns the highest index i such that (o==null ? get(i)==null : o.equals(get(i))), or -1 if there is no such index.
+     * @param o element to search for
+     * @ the index of the last occurrence of the specified element in the current version of this list, or -1 if the current version of this list does not contain the element
+     */
     @Override
     public int lastIndexOf(Object o) {
         return lastIndexOf(o, currentVersion);
     }
 
+    /**
+     * Returns a list iterator over the elements in the specified version of this list (in proper sequence), starting at the specified position in the list.
+     * The specified index indicates the first element that would be returned by an initial call to next.
+     * An initial call to previous would return the element with the specified index minus one.
+     * @param index index of the first element to be returned from the list iterator (by a call to next)
+     * @return a list iterator over the elements in the specified version of this list (in proper sequence), starting at the specified position in the list
+     */
     public ListIterator versionedListIterator(int version, int index) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
@@ -422,7 +623,7 @@ public class PersistentLinkedList<E> implements List {
         if (index < 0 || index >= size)
             throw new IndexOutOfBoundsException(Exceptions.LIST_INDEX_OUT_OF_BOUNDS);
         return new ListIterator() {
-            int currIndex = index;
+            int currIndex = index - 1;
             int _version = version;
             PersistentListNode currElement = versionedHeads.get(_version);
 
@@ -435,13 +636,15 @@ public class PersistentLinkedList<E> implements List {
 
             @Override
             public boolean hasNext() {
+                if (currIndex < 0) return currElement != null;
                 return currElement.getNext(_version) != null;
             }
 
             @Override
             public Object next() {
                 if (hasNext()) {
-                    currElement = currElement.getNext(_version);
+                    if (currIndex >= 0)
+                        currElement = currElement.getNext(_version);
                     currIndex++;
                     return currElement.getObject(_version);
                 } else
@@ -450,13 +653,15 @@ public class PersistentLinkedList<E> implements List {
 
             @Override
             public boolean hasPrevious() {
+                if (currIndex >= size) return currElement != null;
                 return currElement.getPrev(_version) != null;
             }
 
             @Override
             public Object previous() {
                 if (hasPrevious()) {
-                    currElement = currElement.getPrev(_version);
+                    if (currIndex < size)
+                        currElement = currElement.getPrev(_version);
                     currIndex--;
                     return currElement.getObject(_version);
                 } else
@@ -465,12 +670,12 @@ public class PersistentLinkedList<E> implements List {
 
             @Override
             public int nextIndex() {
-                return currIndex + 1;
+                return min(currIndex + 1, size);
             }
 
             @Override
             public int previousIndex() {
-                return currIndex - 1;
+                return max(currIndex - 1, -1);
             }
 
             @Override
@@ -490,20 +695,42 @@ public class PersistentLinkedList<E> implements List {
         };
     }
 
+    /**
+     * Returns a list iterator over the elements in the specified version of this list (in proper sequence).
+     * @return a list iterator over the elements in the specified version of this list (in proper sequence)
+     */
     public ListIterator versionedListIterator(int version) {
         return versionedListIterator(version, 0);
     }
 
+    /**
+     * Returns a list iterator over the elements in the current version of this list (in proper sequence).
+     * @return a list iterator over the elements in the current version of this list (in proper sequence)
+     */
     @Override
     public ListIterator listIterator() {
         return versionedListIterator(currentVersion, 0);
     }
 
+    /**
+     * Returns a list iterator over the elements in the current version of this list (in proper sequence), starting at the specified position in the list.
+     * The specified index indicates the first element that would be returned by an initial call to next.
+     * An initial call to previous would return the element with the specified index minus one.
+     * @param index index of the first element to be returned from the list iterator (by a call to next)
+     * @return a list iterator over the elements in this list (in proper sequence), starting at the specified position in the list
+     */
     @Override
     public ListIterator listIterator(int index) {
         return versionedListIterator(currentVersion, index);
     }
 
+    /**
+     * Returns a view of the portion of the specified version of this list between the specified fromIndex, inclusive, and toIndex, exclusive.
+     * (If fromIndex and toIndex are equal, the returned list is empty.)
+     * @param fromIndex low endpoint (inclusive) of the subList
+     * @param toIndex high endpoint (exclusive) of the subList
+     * @return a view of the specified range within the specified version of this list
+     */
     // TODO what form of list must be returned?
     public List subList(int fromIndex, int toIndex, int version) {
         if (version < 0 || version > currentVersion)
@@ -522,34 +749,21 @@ public class PersistentLinkedList<E> implements List {
         return result;
     }
 
+    /**
+     * Returns a view of the portion of the current version of this list between the specified fromIndex, inclusive, and toIndex, exclusive.
+     * (If fromIndex and toIndex are equal, the returned list is empty.)
+     * @param fromIndex low endpoint (inclusive) of the subList
+     * @param toIndex high endpoint (exclusive) of the subList
+     * @return a view of the specified range within the current version of this list
+     */
     @Override
     public List subList(int fromIndex, int toIndex) {
         return subList(fromIndex, toIndex, currentVersion);
     }
 
-    // TODO
+    // TODO or not to do that's spliterator
     @Override
     public Spliterator spliterator() {
-        return new Spliterator() {
-            @Override
-            public boolean tryAdvance(Consumer action) {
-                return false;
-            }
-
-            @Override
-            public Spliterator trySplit() {
-                return null;
-            }
-
-            @Override
-            public long estimateSize() {
-                return 0;
-            }
-
-            @Override
-            public int characteristics() {
-                return 0;
-            }
-        };
+        throw new UnsupportedOperationException();
     }
 }

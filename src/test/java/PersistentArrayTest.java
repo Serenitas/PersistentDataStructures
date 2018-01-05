@@ -17,7 +17,7 @@ public class PersistentArrayTest {
 
     @Before
     public void setUp() throws Exception {
-        array = new PersistentArray<>(5);
+        /*array = new PersistentArray<>(5);
         array.set(3, 40);
         array.set(3, 42);
         array.set(3, 36);
@@ -28,7 +28,7 @@ public class PersistentArrayTest {
         arrayWithDefaultSize.add("Hello World!");
         PersistentArray<Object> arrayWithSizeOne = new PersistentArray<>(1);
         arrayWithSizeOne.remove();
-        boolean checkRemoveNothing = false;
+        boolean checkRemoveNothing = false;*/
     }
 
     @Test
@@ -47,6 +47,22 @@ public class PersistentArrayTest {
         assertEquals((long) array.get(3, 1), (long) 40);
         assertEquals((long) array.get(3, 2), (long) 42);
         assertEquals((long) array.get(3, 3), (long) 36);
+    }
+
+    @Test
+    public void getVersionedBadVersion() throws Exception {
+        array = new PersistentArray<>();
+        ex.expect(NoSuchElementException.class);
+        ex.expectMessage(Exceptions.NO_SUCH_VERSION);
+        array.get(0, 2018);
+    }
+
+    @Test
+    public void getVersionedBadVIndex() throws Exception {
+        array = new PersistentArray<>();
+        ex.expect(ArrayIndexOutOfBoundsException.class);
+        ex.expectMessage(Exceptions.ARRAY_INDEX_OUT_OF_BOUNDS);
+        array.get(2018, 0);
     }
 
     @Test
@@ -87,13 +103,19 @@ public class PersistentArrayTest {
     }
 
     @Test
-    public void add() throws Exception {
-
+    public void remove() throws Exception {
+        array = new PersistentArray<>(0);
+        array.add(1);
+        array.remove();
+        assertEquals(array.getLength(), 0);
     }
 
     @Test
-    public void remove() throws Exception {
-
+    public void removeEmptyArray() throws Exception {
+        array = new PersistentArray<>(0);
+        ex.expect(ArrayIndexOutOfBoundsException.class);
+        ex.expectMessage(Exceptions.NOTHING_TO_REMOVE);
+        array.remove();
     }
 
 }
