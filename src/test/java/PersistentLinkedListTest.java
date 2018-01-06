@@ -2,9 +2,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
@@ -58,7 +56,7 @@ public class PersistentLinkedListTest {
     public void isEmptyWrongVersion() {
         ex.expect(NoSuchElementException.class);
         ex.expectMessage(Exceptions.NO_SUCH_VERSION);
-        new PersistentLinkedList<>().size(-1);
+        new PersistentLinkedList<>().isEmpty(-1);
     }
 
     @Test
@@ -119,6 +117,15 @@ public class PersistentLinkedListTest {
 
     @Test
     public void add() {
+        persistentLinkedList = new PersistentLinkedList<>();
+        persistentLinkedList.add(0, 2);
+        persistentLinkedList.add(0, 0);
+        persistentLinkedList.add(1, 1);
+        int i = 0;
+        for (Object o : persistentLinkedList) {
+            assertEquals(i, o);
+            i++;
+        }
     }
 
     @Test
@@ -164,11 +171,15 @@ public class PersistentLinkedListTest {
         persistentLinkedList.addAll(set);
         persistentLinkedList.retainAll(set);
         assertEquals(setSize, persistentLinkedList.size());
+        assertEquals(false, persistentLinkedList.retainAll(set));
+        assertEquals(false, persistentLinkedList.retainAll(new LinkedList()));
+        assertEquals(false, new PersistentLinkedList().retainAll(set));
     }
 
     @Test
     public void removeAll() {
         persistentLinkedList = new PersistentLinkedList<>(set);
+        assertEquals(false, persistentLinkedList.removeAll(new LinkedList()));
         persistentLinkedList.removeAll(set);
         assertEquals(true, persistentLinkedList.isEmpty());
     }
@@ -182,86 +193,180 @@ public class PersistentLinkedListTest {
     }
 
     @Test
-    public void containsAll1() {
-    }
-
-    @Test
-    public void toArray2() {
+    public void containsAllWrongVersion() {
+        ex.expect(NoSuchElementException.class);
+        ex.expectMessage(Exceptions.NO_SUCH_VERSION);
+        new PersistentLinkedList<>(set).containsAll(set, -1);
     }
 
     @Test
     public void replaceAll() {
+        persistentLinkedList = new PersistentLinkedList<>(set);
+        persistentLinkedList.replaceAll(o -> (int) o * (int) o);
+        int i = 0;
+        for (Integer o : set) {
+            assertEquals(o * o, persistentLinkedList.get(i));
+            i++;
+        }
     }
 
     @Test
     public void sort() {
+        new PersistentLinkedList().sort(null);
     }
 
     @Test
     public void clear() {
+        persistentLinkedList = new PersistentLinkedList<>(set);
+        persistentLinkedList.clear();
+        assertEquals(true, persistentLinkedList.isEmpty());
     }
 
     @Test
-    public void get() {
+    public void getWrongVersion() {
+        ex.expect(NoSuchElementException.class);
+        ex.expectMessage(Exceptions.NO_SUCH_VERSION);
+        persistentLinkedList = new PersistentLinkedList<>(set);
+        persistentLinkedList.get(0, 6);
     }
 
     @Test
-    public void get1() {
+    public void getWrongIndex() {
+        ex.expect(IndexOutOfBoundsException.class);
+        ex.expectMessage(Exceptions.LIST_INDEX_OUT_OF_BOUNDS);
+        persistentLinkedList = new PersistentLinkedList<>(set);
+        persistentLinkedList.get(setSize + 1, 0);
     }
 
     @Test
-    public void set() {
+    public void setWrongIndex() {
+        ex.expect(IndexOutOfBoundsException.class);
+        ex.expectMessage(Exceptions.LIST_INDEX_OUT_OF_BOUNDS);
+        persistentLinkedList = new PersistentLinkedList<>(set);
+        persistentLinkedList.set(setSize + 1, 0);
     }
 
     @Test
-    public void add1() {
+    public void addWrongIndex() {
+        ex.expect(IndexOutOfBoundsException.class);
+        ex.expectMessage(Exceptions.LIST_INDEX_OUT_OF_BOUNDS);
+        persistentLinkedList = new PersistentLinkedList<>(set);
+        persistentLinkedList.add(setSize + 5, 0);
     }
 
     @Test
-    public void remove1() {
+    public void removeIndex() {
+        persistentLinkedList = new PersistentLinkedList<>(set);
+        persistentLinkedList.remove(setSize - 1);
+        ex.expect(IndexOutOfBoundsException.class);
+        ex.expectMessage(Exceptions.LIST_INDEX_OUT_OF_BOUNDS);
+        persistentLinkedList.remove(setSize + 1);
     }
 
     @Test
     public void indexOf() {
+        persistentLinkedList = new PersistentLinkedList<>();
+        assertEquals(-1, persistentLinkedList.indexOf("object"));
+        persistentLinkedList.add("object1");
+        persistentLinkedList.add("object");
+        assertEquals(1, persistentLinkedList.indexOf("object"));
     }
 
     @Test
-    public void indexOf1() {
+    public void indexOfWrongVersion() {
+        persistentLinkedList = new PersistentLinkedList<>();
+        ex.expect(NoSuchElementException.class);
+        ex.expectMessage(Exceptions.NO_SUCH_VERSION);
+        persistentLinkedList.indexOf("object", 26);
     }
 
     @Test
     public void lastIndexOf() {
+        persistentLinkedList = new PersistentLinkedList<>();
+        assertEquals(-1, persistentLinkedList.lastIndexOf("object"));
+        persistentLinkedList.add("object");
+        persistentLinkedList.add("object");
+        assertEquals(1, persistentLinkedList.lastIndexOf("object"));
     }
 
     @Test
-    public void lastIndexOf1() {
+    public void lastIndexOfWrongVersion() {
+        persistentLinkedList = new PersistentLinkedList<>();
+        ex.expect(NoSuchElementException.class);
+        ex.expectMessage(Exceptions.NO_SUCH_VERSION);
+        persistentLinkedList.lastIndexOf("object", 26);
     }
 
     @Test
     public void versionedListIterator() {
+        persistentLinkedList = new PersistentLinkedList<>();
+        persistentLinkedList.addAll(set);
+        ListIterator li = persistentLinkedList.versionedListIterator(1, 1);
+        assertEquals(true, li.hasNext());
+        assertEquals(set.toArray()[2], li.next());
     }
 
     @Test
-    public void versionedListIterator1() {
+    public void versionedListIteratorWrongIndex() {
+        ex.expect(IndexOutOfBoundsException.class);
+        ex.expectMessage(Exceptions.LIST_INDEX_OUT_OF_BOUNDS);
+        persistentLinkedList = new PersistentLinkedList<>();
+        persistentLinkedList.addAll(set);
+        ListIterator li = persistentLinkedList.versionedListIterator(1, setSize + 1);
+    }
+
+    @Test
+    public void versionedListIteratorWrongVersion() {
+        ex.expect(NoSuchElementException.class);
+        ex.expectMessage(Exceptions.NO_SUCH_VERSION);
+        persistentLinkedList = new PersistentLinkedList<>();
+        persistentLinkedList.addAll(set);
+        ListIterator li = persistentLinkedList.versionedListIterator(10, 1);
     }
 
     @Test
     public void listIterator() {
-    }
-
-    @Test
-    public void listIterator1() {
+        persistentLinkedList = new PersistentLinkedList<>();
+        persistentLinkedList.addAll(set);
+        ListIterator li = persistentLinkedList.listIterator(1);
+        assertEquals(true, li.hasNext());
+        assertEquals(set.toArray()[2], li.next());
+        li = persistentLinkedList.listIterator();
+        assertEquals(true, li.hasNext());
+        assertEquals(set.toArray()[0], li.next());
     }
 
     @Test
     public void subList() {
+        persistentLinkedList = new PersistentLinkedList<>(set);
+        List l = persistentLinkedList.subList(0, setSize - 1);
+        assertEquals(l.get(0), persistentLinkedList.get(0));
     }
 
     @Test
-    public void subList1() {
+    public void subListWrongIndex() {
+        ex.expect(IndexOutOfBoundsException.class);
+        ex.expectMessage(Exceptions.LIST_INDEX_OUT_OF_BOUNDS);
+        persistentLinkedList = new PersistentLinkedList<>(set);
+        List l = persistentLinkedList.subList(2, 1);
+    }
+
+    @Test
+    public void subListWrongVersion() {
+        ex.expect(NoSuchElementException.class);
+        ex.expectMessage(Exceptions.NO_SUCH_VERSION);
+        persistentLinkedList = new PersistentLinkedList<>(set);
+        List l = persistentLinkedList.subList(1, setSize - 1, 10);
     }
 
     @Test
     public void spliterator() {
+        ex.expect(UnsupportedOperationException.class);
+        new PersistentLinkedList<>().spliterator();
+    }
+
+    @Test
+    public void toArray1() {
+        new PersistentLinkedList<>().toArray(new Object[5]);
     }
 }
