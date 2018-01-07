@@ -367,6 +367,7 @@ public class PersistentLinkedListTest {
 
     @Test
     public void toArray1() {
+        ex.expect(UnsupportedOperationException.class);
         new PersistentLinkedList<>().toArray(new Object[5]);
     }
 }

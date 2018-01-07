@@ -263,7 +263,6 @@ public class PersistentLinkedList<E> implements List {
      * @param c collection containing elements to be added to this list
      * @return true if this list changed as a result of the call
      */
-    // TODO O(N*M) -> O(N + M)
     @Override
     public boolean addAll(int index, Collection c) {
         if (index < 0 || index > size())
@@ -271,10 +270,40 @@ public class PersistentLinkedList<E> implements List {
         if (c.isEmpty())
             return false;
         currentVersion++;
-        for (Object o : c) {
-            add(index, o, currentVersion);
-            index++;
+
+        PersistentListNode<E> current = null;
+        PersistentListNode<E> prev = null;
+        if (!(versionedHeads.size() == 0 || versionedHeads.floorEntry(currentVersion).getValue() == null)) {
+            current = versionedHeads.floorEntry(currentVersion).getValue();
+
+            if (index == size()) {
+                prev = versionedTails.floorEntry(currentVersion).getValue();
+                current = null;
+            } else {
+                for (int i = 0; i < index; i++) {
+                    current = current.getNext(currentVersion);
+                } // after that current is element needed to shift
+
+                prev = current.getPrev(currentVersion);
+            }
         }
+        PersistentListNode<E> newEl = null;
+        for (Object o : c) {
+            newEl = new PersistentListNode<>((E)o, currentVersion, prev, current);
+            if (null != prev) {
+                prev.setNext(currentVersion, newEl);
+            } else {
+                versionedHeads.put(currentVersion, newEl);
+            }
+            if (null != current) {
+                current.setPrev(currentVersion, newEl);
+            } else {
+                versionedTails.put(currentVersion, newEl);
+            }
+            prev = newEl;
+        }
+
+        versionsLengths.put(currentVersion, size(currentVersion) + c.size());
         return true;
     }
 
@@ -320,7 +349,6 @@ public class PersistentLinkedList<E> implements List {
      * @param c collection containing elements to be removed from this list
      * @return true if this list changed as a result of the call
      */
-    // TODO O(N*M) -> O(N + M)
     @Override
     public boolean removeAll(Collection c) {
         boolean isChanged = false;
@@ -361,10 +389,9 @@ public class PersistentLinkedList<E> implements List {
         return containsAll(c, currentVersion);
     }
 
-    //TODO понять чо тут вообще хотят
     @Override
     public Object[] toArray(Object[] a) {
-        return new Object[0];
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -382,10 +409,9 @@ public class PersistentLinkedList<E> implements List {
         }
     }
 
-    // TODO sort
     @Override
     public void sort(Comparator c) {
-
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -731,7 +757,6 @@ public class PersistentLinkedList<E> implements List {
      * @param toIndex high endpoint (exclusive) of the subList
      * @return a view of the specified range within the specified version of this list
      */
-    // TODO what form of list must be returned?
     public List subList(int fromIndex, int toIndex, int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
@@ -742,8 +767,10 @@ public class PersistentLinkedList<E> implements List {
 
         List<E> result = new ArrayList<E>();
         PersistentListNode<E> current = versionedHeads.floorEntry(version).getValue();
-        for (int i = 0; i < size; i++) {
-            result.add(current.getObject(version));
+        for (int i = 0; i < toIndex; i++) {
+            if (i >= fromIndex && i < toIndex) {
+                result.add(current.getObject(version));
+            }
             current = current.getNext(version);
         }
         return result;
@@ -761,7 +788,6 @@ public class PersistentLinkedList<E> implements List {
         return subList(fromIndex, toIndex, currentVersion);
     }
 
-    // TODO or not to do that's spliterator
     @Override
     public Spliterator spliterator() {
         throw new UnsupportedOperationException();
