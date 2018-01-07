@@ -51,6 +51,6 @@ public class PersistentMapNode<E> {
     }
 
     public boolean isRemoved(int version) {
-        return versionedData.floorEntry(version).getValue().isRemoved();
+        return versionedData.floorEntry(version) == null || versionedData.floorEntry(version).getValue().isRemoved();
     }
 }

@@ -40,6 +40,7 @@ public class PersistentMap<K, V> implements Map {
     public PersistentMap() {
         versionsLengths = new TreeMap<>();
         versionedData = new TreeMap<>();
+        versionsLengths.put(0, 0);
     }
 
     public int size(int version) {
@@ -53,8 +54,9 @@ public class PersistentMap<K, V> implements Map {
         return size(currentVersion);
     }
 
-    public boolean isEmpty(int version)
-    {
+    public boolean isEmpty(int version) {
+        if (version < 0 || version > currentVersion)
+            throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
         return size(version) == 0;
     }
 
@@ -107,6 +109,8 @@ public class PersistentMap<K, V> implements Map {
     public Object get(Object key, int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
+        if (!versionedData.containsKey(key))
+            return null;
         PersistentMapNode node = versionedData.get(key);
         if (!node.isRemoved(version)) {
             return node.getObject(version);
@@ -127,6 +131,8 @@ public class PersistentMap<K, V> implements Map {
         currentVersion++;
         if (null == node) {
             versionedData.put((K)key, new PersistentMapNode<V>((V)value, currentVersion));
+            int currSize = versionsLengths.floorEntry(currentVersion).getValue();
+            versionsLengths.put(currentVersion, currSize + 1);
         } else {
             oldValue = node.getObject(currentVersion - 1);
             node.setObject(currentVersion, value);
@@ -142,6 +148,8 @@ public class PersistentMap<K, V> implements Map {
         if (null != node) {
             oldValue = node.getObject(currentVersion - 1);
             node.removeObject(currentVersion);
+            int currSize = versionsLengths.floorEntry(currentVersion).getValue();
+            versionsLengths.put(currentVersion, currSize - 1);
         }
         return oldValue;
     }
@@ -166,18 +174,18 @@ public class PersistentMap<K, V> implements Map {
     public void clear() {
         currentVersion++;
         for (Map.Entry<K, PersistentMapNode<V>> entry : versionedData.entrySet()) {
-            if (entry.getValue().isRemoved(currentVersion - 1)) {
-                continue;
+            if (!entry.getValue().isRemoved(currentVersion - 1)) {
+                entry.getValue().removeObject(currentVersion);
             }
-            entry.getValue().removeObject(currentVersion); // is that change value in real map?
         }
+        versionsLengths.put(currentVersion, 0);
     }
 
     public Set keySet(int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
         Set<K> keys = versionedData.keySet();
-        Set<K> resultKeys = versionedData.keySet();
+        Set<K> resultKeys = new HashSet<>(versionedData.keySet());
 
         for (K key : keys) {
             if (versionedData.get(key).isRemoved(version)) {
@@ -213,7 +221,7 @@ public class PersistentMap<K, V> implements Map {
     public Set<Entry> entrySet(int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
-        Set<Entry> result = new TreeSet<>();
+        Set<Entry> result = new HashSet<>();
 
         for (Map.Entry<K, PersistentMapNode<V>> entry : versionedData.entrySet()) {
             if (!entry.getValue().isRemoved(version)) {

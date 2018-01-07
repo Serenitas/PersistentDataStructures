@@ -212,6 +212,7 @@ public class PersistentLinkedListTest {
 
     @Test
     public void sort() {
+        ex.expect(UnsupportedOperationException.class);
         new PersistentLinkedList().sort(null);
     }
 
