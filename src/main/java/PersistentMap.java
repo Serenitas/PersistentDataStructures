@@ -5,6 +5,34 @@ import java.util.function.Function;
 
 
 public class PersistentMap<K, V> implements Map {
+
+    private class PersistentMapEntry<K, V> implements Map.Entry<K, V> {
+        private final K key;
+        private V value;
+
+        public PersistentMapEntry(K key, V value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        @Override
+        public K getKey() {
+            return key;
+        }
+
+        @Override
+        public V getValue() {
+            return value;
+        }
+
+        @Override
+        public V setValue(V value) {
+            V old = this.value;
+            this.value = value;
+            return old;
+        }
+    }
+
     private int currentVersion = 0;
     private TreeMap<Integer, Integer> versionsLengths;
     private TreeMap<K, PersistentMapNode<V>> versionedData;
@@ -145,7 +173,6 @@ public class PersistentMap<K, V> implements Map {
         }
     }
 
-    // how to make it backed by map?
     public Set keySet(int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
@@ -165,12 +192,17 @@ public class PersistentMap<K, V> implements Map {
         return keySet(currentVersion);
     }
 
-    // how to make it backed by map?
-    // TODO
     public Collection values(int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
-        return null;
+
+        LinkedList<V> result = new LinkedList<V>();
+        for (Map.Entry<K, PersistentMapNode<V>> entry : versionedData.entrySet()) {
+            if (!entry.getValue().isRemoved(version)) {
+                result.add(entry.getValue().getObject(version));
+            }
+        }
+        return result;
     }
 
     @Override
@@ -178,12 +210,17 @@ public class PersistentMap<K, V> implements Map {
         return values(currentVersion);
     }
 
-    // how to make it backed by map?
-    // TODO
     public Set<Entry> entrySet(int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
-        return null;
+        Set<Entry> result = new TreeSet<>();
+
+        for (Map.Entry<K, PersistentMapNode<V>> entry : versionedData.entrySet()) {
+            if (!entry.getValue().isRemoved(version)) {
+                result.add(new PersistentMapEntry<>(entry.getKey(), entry.getValue().getObject(version)));
+            }
+        }
+        return result;
     }
 
     @Override
@@ -205,62 +242,165 @@ public class PersistentMap<K, V> implements Map {
     public Object getOrDefault(Object key, Object defaultValue) {
         return getOrDefault(key, defaultValue, currentVersion);
     }
-    // TODO
+
     @Override
     public void forEach(BiConsumer action) {
-
+        for (Map.Entry<K, PersistentMapNode<V>> entry : versionedData.entrySet()) {
+            if (!entry.getValue().isRemoved(currentVersion)) {
+                action.accept(entry.getKey(), entry.getValue().getObject(currentVersion));
+            }
+        }
     }
-    // TODO
+
     @Override
     public void replaceAll(BiFunction function) {
+        for (Map.Entry<K, PersistentMapNode<V>> entry : versionedData.entrySet()) {
+            if (!entry.getValue().isRemoved(currentVersion)) {
+                entry.getValue().setObject(currentVersion + 1, (V)function.apply(entry.getKey(), entry.getValue().getObject(currentVersion)));
+            }
+        }
+        currentVersion++;
+    }
 
-    }
-    // TODO
     @Override
-    public Object putIfAbsent(Object key, Object value)
-    {
-        return null;
+    public Object putIfAbsent(Object key, Object value) {
+        Object oldValue = null;
+        PersistentMapNode node = versionedData.get(key);
+        currentVersion++;
+        if (null == node) {
+            versionedData.put((K)key, new PersistentMapNode<V>((V)value, currentVersion));
+        } else {
+            oldValue = node.getObject(currentVersion - 1);
+            if (null == oldValue) {
+                node.setObject(currentVersion, value);
+            }
+        }
+        return oldValue;
     }
-    // TODO
+
     @Override
     public boolean remove(Object key, Object value)
     {
+        PersistentMapNode node = versionedData.get(key);
+        int curSize = size();
+
+        if (null != node && node.getObject(currentVersion).equals(value) && !node.isRemoved(currentVersion)) {
+            currentVersion++;
+            node.removeObject(currentVersion);
+            versionsLengths.put(currentVersion, curSize - 1);
+            return true;
+        }
         return false;
     }
-    // TODO
+
     @Override
-    public boolean replace(Object key, Object oldValue, Object newValue)
-    {
+    public boolean replace(Object key, Object oldValue, Object newValue) {
+        PersistentMapNode node = versionedData.get(key);
+
+        if (null != node && null != node.getObject(currentVersion) &&
+                !node.isRemoved(currentVersion) && node.getObject(currentVersion).equals(oldValue)) {
+            currentVersion++;
+            node.setObject(currentVersion, newValue);
+            return true;
+        }
         return false;
     }
-    // TODO
+
     @Override
-    public Object replace(Object key, Object value)
-    {
-        return null;
+    public Object replace(Object key, Object value) {
+        Object oldValue = null;
+        PersistentMapNode node = versionedData.get(key);
+
+        if (null != node && !node.isRemoved(currentVersion)) {
+            oldValue = node.getObject(currentVersion);
+            currentVersion++;
+            node.setObject(currentVersion, value);
+        }
+        return oldValue;
     }
-    // TODO
+
     @Override
-    public Object computeIfAbsent(Object key, Function mappingFunction)
-    {
-        return null;
+    public Object computeIfAbsent(Object key, Function mappingFunction) {
+        PersistentMapNode node = versionedData.get(key);
+
+        if (null != node && !node.isRemoved(currentVersion) && node.getObject(currentVersion) != null) {
+            return node.getObject(currentVersion);
+        }
+
+        Object value = mappingFunction.apply(key);
+        if (null != value) {
+            currentVersion++;
+            if (null == node) {
+                versionedData.put((K)key, new PersistentMapNode<V>((V)value, currentVersion));
+            } else {
+                node.setObject(currentVersion, value);
+            }
+        }
+
+        return value;
     }
-    // TODO
+
     @Override
-    public Object computeIfPresent(Object key, BiFunction remappingFunction)
-    {
-        return null;
+    public Object computeIfPresent(Object key, BiFunction remappingFunction) {
+        PersistentMapNode node = versionedData.get(key);
+
+        if (null == node || node.isRemoved(currentVersion) || node.getObject(currentVersion) == null) {
+            return null;
+        }
+
+        Object oldValue = node.getObject(currentVersion);
+        Object value = remappingFunction.apply(key, oldValue);
+        currentVersion++;
+        if (null != value) {
+            node.setObject(currentVersion, value);
+        } else {
+            node.removeObject(currentVersion);
+        }
+
+        return value;
     }
-    // TODO
+
     @Override
-    public Object compute(Object key, BiFunction remappingFunction)
-    {
-        return null;
+    public Object compute(Object key, BiFunction remappingFunction) {
+        PersistentMapNode node = versionedData.get(key);
+
+        Object oldValue = null;
+        if (null != node && !node.isRemoved(currentVersion)) {
+            oldValue = node.getObject(currentVersion);
+        }
+
+        Object value = remappingFunction.apply(key, oldValue);
+        currentVersion++;
+        if (null != value) {
+            node.setObject(currentVersion, value);
+        } else {
+            if (null != oldValue) {
+                node.removeObject(currentVersion);
+            }
+        }
+
+        return value;
     }
-    // TODO
+
     @Override
-    public Object merge(Object key, Object value, BiFunction remappingFunction)
-    {
-        return null;
+    public Object merge(Object key, Object value, BiFunction remappingFunction) {
+        PersistentMapNode node = versionedData.get(key);
+        if (null == node || node.isRemoved(currentVersion) || node.getObject(currentVersion) == null) {
+            currentVersion++;
+            node.setObject(currentVersion, value);
+            return value;
+        }
+
+        Object oldValue = node.getObject(currentVersion);
+        Object newValue = remappingFunction.apply(key, oldValue);
+        currentVersion++;
+
+        if (null != newValue) {
+            node.setObject(currentVersion, newValue);
+        } else {
+            node.removeObject(currentVersion);
+        }
+
+        return newValue;
     }
 }
