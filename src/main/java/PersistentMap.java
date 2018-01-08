@@ -37,34 +37,63 @@ public class PersistentMap<K, V> implements Map {
     private TreeMap<Integer, Integer> versionsLengths;
     private TreeMap<K, PersistentMapNode<V>> versionedData;
 
+    /**
+     * Constructs an empty persistent map.
+     */
     public PersistentMap() {
         versionsLengths = new TreeMap<>();
         versionedData = new TreeMap<>();
         versionsLengths.put(0, 0);
     }
 
+    /**
+     * Returns the number of elements in the specified version of this map.
+     * @param version version of this map
+     * @return number of elements in the specified version of this map.
+     */
     public int size(int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
         return versionsLengths.floorEntry(version).getValue();
     }
 
+    /**
+     * Returns the number of elements in the current version of this map.
+     * @return number of elements in the current version of this map.
+     */
     @Override
     public int size() {
         return size(currentVersion);
     }
 
+    /**
+     * Returns true if the specified version of this map contains no elements.
+     * @param version version of this map
+     * @return true if the specified version of this map contains no elements, false otherwise
+     */
     public boolean isEmpty(int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
         return size(version) == 0;
     }
 
+    /**
+     * Returns true if the current version of this map contains no elements.
+     * @return true if the current version of this map contains no elements, false otherwise
+     */
     @Override
     public boolean isEmpty() {
         return isEmpty(currentVersion);
     }
 
+    /**
+     * Returns true if this version of map contains a mapping for the specified key.
+     * More formally, returns true if and only if this version of map contains a mapping for a key k such that (key==null ? k==null : key.equals(k)).
+     * (There can be at most one such mapping.)
+     * @param key key whose presence in this map is to be tested
+     * @param version version of this map
+     * @return true if this version of map contains a mapping for the specified key
+     */
     public boolean containsKey(Object key, int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
@@ -78,11 +107,26 @@ public class PersistentMap<K, V> implements Map {
         return false;
     }
 
+    /**
+     * Returns true if current version of map contains a mapping for the specified key.
+     * More formally, returns true if and only if current version of map contains a mapping for a key k such that (key==null ? k==null : key.equals(k)).
+     * (There can be at most one such mapping.)
+     * @param key key whose presence in this map is to be tested
+     * @return true if this version of map contains a mapping for the specified key
+     */
     @Override
     public boolean containsKey(Object key) {
         return containsKey(key, currentVersion);
     }
 
+    /**
+     * Returns true if this version of map maps one or more keys to the specified value.
+     * More formally, returns true if and only if current version of map contains at least one mapping to a value v such that (value==null ? v==null : value.equals(v)).
+     * This operation will probably require time linear in the map size for most implementations of the Map interface.
+     * @param value value whose presence in current version of map is to be tested
+     * @param version version of this map
+     * @return if this version of map maps one or more keys to the specified value
+     */
     public boolean containsValue(Object value, int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
@@ -100,12 +144,26 @@ public class PersistentMap<K, V> implements Map {
         return false;
     }
 
+    /**
+     * Returns true if current version of map maps one or more keys to the specified value.
+     * More formally, returns true if and only if current version of map contains at least one mapping to a value v such that (value==null ? v==null : value.equals(v)).
+     * This operation will probably require time linear in the map size for most implementations of the Map interface.
+     * @param value value whose presence in current version of map is to be tested
+     * @return if current version of map maps one or more keys to the specified value
+     */
     @Override
-    public boolean containsValue(Object value)
-    {
+    public boolean containsValue(Object value) {
         return containsValue(value, currentVersion);
     }
 
+    /**
+     * Returns the value to which the specified key is mapped, or null if this version of map contains no mapping for the key.
+     * More formally, if this version of map contains a mapping from a key k to a value v such that (key==null ? k==null : key.equals(k)), then this method returns v; otherwise it returns null.
+     * (There can be at most one such mapping.)
+     * @param key the key whose associated value is to be returned
+     * @param version version of this map
+     * @return the value to which the specified key is mapped, or null if this version of map contains no mapping for the key
+     */
     public Object get(Object key, int version) {
         if (version < 0 || version > currentVersion)
             throw new NoSuchElementException(Exceptions.NO_SUCH_VERSION);
@@ -118,12 +176,26 @@ public class PersistentMap<K, V> implements Map {
         return null;
     }
 
+    /**
+     * Returns the value to which the specified key is mapped, or null if current version of map contains no mapping for the key.
+     * More formally, if current version of map contains a mapping from a key k to a value v such that (key==null ? k==null : key.equals(k)), then this method returns v; otherwise it returns null.
+     * (There can be at most one such mapping.)
+     * @param key the key whose associated value is to be returned
+     * @return the value to which the specified key is mapped, or null if current version of map contains no mapping for the key
+     */
     @Override
-    public Object get(Object key)
-    {
+    public Object get(Object key) {
         return get(key, currentVersion);
     }
 
+    /**
+     * Associates the specified value with the specified key in current version of map (optional operation).
+     * If the map previously contained a mapping for the key, the old value is replaced by the specified value.
+     * (A map m is said to contain a mapping for a key k if and only if m.containsKey(k) would return true.)
+     * @param key key with which the specified value is to be associated
+     * @param value value to be associated with the specified key
+     * @return the previous value associated with key, or null if there was no mapping for key.
+     */
     @Override
     public Object put(Object key, Object value) {
         Object oldValue = null;
